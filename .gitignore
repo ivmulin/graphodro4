@@ -40,6 +40,15 @@ undo/
 # VS Code
 .vscode/
 
+# --- Obsidian Specific ---
+# Скрытая папка с настройками интерфейса и плагинов
+.obsidian/
+.trash/
+.DS_Store
+Technical_task/.obsidian/
+Technical_task/.trash/
+Technical_task/.DS_Store
+
 # --- Operating System Specific ---
 .DS_Store
 *.directory
