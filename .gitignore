@@ -1,41 +1,52 @@
-# Prerequisites
-*.d
+# --- Build Artifacts ---
+# Игнорируем директорию сборки целиком (out-of-source build)
+build/
+bin/
+obj/
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# --- CMake Intermediate Files ---
+# Эти файлы CMake генерирует под конкретную систему
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+Makefile
+*.cmake
 
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
+# --- Executables ---
+# Основной бинарник и тесты (для Linux и Windows)
+graphodro4
+graphodro4.exe
+unit_tests
 *.out
 *.app
 
-# debug information files
+# --- IDE & Editor Specific ---
+# Visual Studio (Windows)
+.vs/
+*.user
+*.sln
+*.vcxproj
+*.filters
+
+# Neovim / Vim (Linux)
+*.swp
+*.swo
+Session.vim
+.netrwhist
+undo/
+
+# VS Code
+.vscode/
+
+# --- Operating System Specific ---
+.DS_Store
+*.directory
+Thumbs.db
+
+# --- Debug & Logs ---
+*.log
+*.pdb
+*.ilk
 *.dwo
