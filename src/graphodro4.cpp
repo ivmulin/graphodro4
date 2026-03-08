@@ -1,33 +1,30 @@
 #include <iostream>
 
-#include "igraph.hpp"
+#include "adjacency_list.hpp"
+#include "parsers.hpp"
 
-class Graph : public IUnweightedGraph {
-   private:
-    int n = 0;
-
-   public:
-    std::vector<int> getNeighbors(int vertex) const override {
-        return {};
-    };
-
-    int getVertexCount() const override {
-        return n;
-    };
-
-    int getN() const override {
-        return n;
-    };
-
-    void addEdge(int from, int to) override {
-        std::cout << "to be defined...\n";
-    };
-};
+using Graph = AdjacencyList;
 
 int main() {
     std::cout << "Hello!\n";
+    /*
+        Graph g;
+        // g.addVertex(2);
+        g.addEdge(0, 0);
+        // g.addVertex();
+        g.addEdge(1, 0);
+        g.addEdge(1, 3);
+        g.addEdge(3, 2);
+        g.addEdge(2, 4);
+        g.addEdge(1, 2);
+    */
+
     Graph g;
-    g.addEdge(0, 1);
+
+    EdgeListParser elp;
+    elp.parse("samples/edgelist1.txt", g);
+    std::cout << g << "\n";
+
     std::cout << "Fin!\n";
     return 0;
 }
