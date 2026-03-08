@@ -37,6 +37,10 @@ Session.vim
 .netrwhist
 undo/
 
+# --- LSP & Static Analysis ---
+compile_commands.json
+.clangd/
+
 # VS Code
 .vscode/
 
