@@ -23,17 +23,17 @@ class EdgeListParser : public IParser {
    public:
     void parse(const std::string& filename, IGraph& g) const override;
     void parseFromEdgeList(const std::vector<std::pair<int, int>>& edgeList,
-                           const IGraph& g);
+                           IGraph& g);
 };
 
-class AdjacencyListParser : public IParser {
-    /* AdjacencyListParser
-     * Графовый парсер из списка смежности
-     */
-   public:
-    void parse(const std::string& filename, IGraph& g) const override;
-    void parseFromAdjList(const std::vector<std::vector<int>>& adjList,
-                          const IGraph& g);
-};
+// class AdjacencyListParser : public IParser {
+//     /* AdjacencyListParser
+//      * Графовый парсер из списка смежности
+//      */
+//    public:
+//     void parse(const std::string& filename, IGraph& g) const override;
+//     void parseFromAdjList(const std::vector<std::vector<int>>& adjList,
+//                           IGraph& g);
+// };
 
 #endif  // PARSERS_HPP
