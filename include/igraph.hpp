@@ -15,12 +15,14 @@ class IGraph {
    public:
     virtual ~IGraph() = default;
 
-    virtual std::vector<int> getNeighbors(int vertex) const = 0;
+    virtual std::vector<size_t> getNeighbors(size_t vertex) const = 0;
     virtual size_t getVertexCount() const = 0;
     virtual size_t getN() const = 0;
+    virtual size_t deg(size_t vertex) const = 0;
 
-    virtual int addVertex(uint8_t k = 1) = 0;
-    virtual int addEdge(int from, int to) = 0;
+    virtual size_t addVertex(uint8_t k = 1) = 0;
+    virtual size_t addEdge(size_t from, size_t to) = 0;
+    virtual size_t rmEdges(size_t from, size_t to, size_t occurrences = 1) = 0;
 
     // Перегрузка std::cout
     virtual void _print(std::ostream& os) const = 0;
