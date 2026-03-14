@@ -1,7 +1,7 @@
 #ifndef PARSERS_HPP
 #define PARSERS_HPP
 
-#include <vector>
+#include <fstream>
 
 #include "igraph.hpp"
 
@@ -14,6 +14,12 @@ class IParser {
    public:
     virtual ~IParser() = default;
     virtual void parse(const std::string& filename, IGraph& g) const = 0;
+    // virtual void parseFromEdgeList(
+    //     const std::vector<std::pair<int, int>>& edgeList, IGraph& g) const =
+    //     0;
+    // virtual void parseFromAdjMatrix(const std::vector<std::vector<int>>&
+    // adjList,
+    //                         IGraph& g) const override;
 };
 
 class EdgeListParser : public IParser {
@@ -22,18 +28,20 @@ class EdgeListParser : public IParser {
      */
    public:
     void parse(const std::string& filename, IGraph& g) const override;
-    void parseFromEdgeList(const std::vector<std::pair<int, int>>& edgeList,
-                           IGraph& g);
+    // void parseFromEdgeList(const std::vector<std::pair<int, int>>& edgeList,
+    //                        IGraph& g) const override;
 };
 
-// class AdjacencyListParser : public IParser {
-//     /* AdjacencyListParser
-//      * Графовый парсер из списка смежности
-//      */
-//    public:
-//     void parse(const std::string& filename, IGraph& g) const override;
-//     void parseFromAdjList(const std::vector<std::vector<int>>& adjList,
-//                           IGraph& g);
-// };
+class AdjMatrixParser : public IParser {
+    /* AdjacencyListParser
+     * Графовый парсер из матрицы смежности
+     */
+   public:
+    void parse(const std::string& filename, IGraph& g) const override;
+    // void parseFromAdjMatrix(const std::vector<std::vector<int>>& adjList,
+    //                         IGraph& g) const override;
+   private:
+    size_t peekMatrixSize(std::ifstream& file) const;
+};
 
 #endif  // PARSERS_HPP

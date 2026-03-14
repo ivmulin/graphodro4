@@ -3,6 +3,7 @@
 
 #include <sys/types.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <vector>
@@ -18,9 +19,15 @@ class AdjacencyList : public IUnweightedGraph {
    public:
     // геттеры
     std::vector<size_t> getNeighbors(size_t vertex) const override;
+
     size_t getVertexCount() const override;
-    size_t getN() const override;
+    size_t getV() const override;
+    size_t getEdgesCount() const override;
+    size_t getE() const override;
+
     size_t deg(size_t vertex) const override;
+    const std::vector<size_t>& operator[](size_t vertex) const;
+    const std::vector<size_t>& at(size_t vertex) const;
 
    public:
     // модификаторы

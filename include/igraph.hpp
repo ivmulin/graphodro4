@@ -16,8 +16,12 @@ class IGraph {
     virtual ~IGraph() = default;
 
     virtual std::vector<size_t> getNeighbors(size_t vertex) const = 0;
+
     virtual size_t getVertexCount() const = 0;
-    virtual size_t getN() const = 0;
+    virtual size_t getV() const = 0;
+    virtual size_t getEdgesCount() const = 0;
+    virtual size_t getE() const = 0;
+
     virtual size_t deg(size_t vertex) const = 0;
 
     virtual size_t addVertex(uint8_t k = 1) = 0;

@@ -1,9 +1,12 @@
 #include "adjacency_list.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
+
+// ======== ГЕТТЕРЫ ==========
 
 std::vector<size_t> AdjacencyList::getNeighbors(size_t vertex) const {
     return p_adjList.at(vertex);
@@ -13,20 +16,43 @@ size_t AdjacencyList::getVertexCount() const {
     return p_n;
 };
 
-size_t AdjacencyList::getN() const {
+size_t AdjacencyList::getV() const {
     return p_n;
 };
 
+size_t AdjacencyList::getEdgesCount() const {
+    return p_edges;
+};
+
+size_t AdjacencyList::getE() const {
+    return p_edges;
+};
+
 size_t AdjacencyList::deg(size_t vertex) const {
-    if (vertex < this->p_adjList.size()) return this->p_adjList[vertex].size();
+    if (vertex < p_adjList.size()) return p_adjList[vertex].size();
 
     throw std::out_of_range("Vertex is not in graph!");
 }
 
+const std::vector<size_t>& AdjacencyList::operator[](size_t vertex) const {
+    // В низкоуровневых операторах [] обычно не делают проверок для скорости,
+    // полагаясь на вызывающего (аналогично std::vector::operator[]).
+    return p_adjList[vertex];
+}
+
+const std::vector<size_t>& AdjacencyList::at(size_t vertex) const {
+    if (vertex >= p_adjList.size()) {
+        throw std::out_of_range("Vertex index out of range");
+    }
+    return p_adjList.at(vertex);
+}
+
+// ======== МОДИФИКАТОРЫ ========
+
 size_t AdjacencyList::addEdge(size_t from, size_t to) {
     // Проверка на трезвость
-    size_t max = from > to ? from : to;
-    if (max + 1 > p_n) this->addVertex(max - p_n + 1);
+    size_t max = std::max({p_n, from, to});
+    if (max + 1 > p_n) addVertex(max - p_n + 1);
 
     p_adjList[from].emplace_back(to);
     if (from != to) {  // исключаем петли
@@ -50,12 +76,11 @@ static size_t removeFirstN(std::vector<size_t>& vec, size_t target,
                            size_t occurrences);
 
 size_t AdjacencyList::rmEdges(size_t from, size_t to, size_t occurrences) {
-    size_t fromToRemovals =
-        removeFirstN(this->p_adjList[from], to, occurrences);
+    size_t fromToRemovals = removeFirstN(p_adjList[from], to, occurrences);
 
     size_t toFromRemovals = fromToRemovals;
     if (from != to)
-        toFromRemovals = removeFirstN(this->p_adjList[to], from, occurrences);
+        toFromRemovals = removeFirstN(p_adjList[to], from, occurrences);
 
     assert(fromToRemovals == toFromRemovals &&
            "Symmetry broken in undirected graph!");
@@ -73,16 +98,17 @@ size_t AdjacencyList::rmEdges(size_t from, size_t to, size_t occurrences) {
     return fromToRemovals;
 }
 
+// ======== ВСЯКОЕ =========
+
 // Перегрузка std::cout << AdjacencyList
 void AdjacencyList::_print(std::ostream& os) const {
-    os << "Adjacency List of G (|V|=" << this->p_n << ", |E|=" << this->p_edges
-       << "):\n";
-    for (size_t i = 0; i < this->p_adjList.size(); ++i) {
+    os << "Adjacency List of G (|V|=" << p_n << ", |E|=" << p_edges << "):\n";
+    for (size_t i = 0; i < p_adjList.size(); ++i) {
         os << i << " -> { ";
-        for (size_t neighbor : this->p_adjList[i]) {
+        for (size_t neighbor : p_adjList[i]) {
             os << neighbor << " ";
         }
-        os << "}" << (i == this->p_adjList.size() - 1 ? "." : ";\n");
+        os << "}" << (i == p_adjList.size() - 1 ? "." : ";\n");
     }
 }
 
