@@ -12,7 +12,7 @@ std::vector<size_t> AdjacencyList::getNeighbors(size_t vertex) const {
     return p_adjList.at(vertex);
 };
 
-size_t AdjacencyList::getVertexCount() const {
+size_t AdjacencyList::getVerticesCount() const {
     return p_n;
 };
 
@@ -52,7 +52,7 @@ const std::vector<size_t>& AdjacencyList::at(size_t vertex) const {
 size_t AdjacencyList::addEdge(size_t from, size_t to) {
     // Проверка на трезвость
     size_t max = std::max({p_n, from, to});
-    if (max + 1 > p_n) addVertex(max - p_n + 1);
+    if (max + 1 > p_n) addVertices(max - p_n + 1);
 
     p_adjList[from].emplace_back(to);
     if (from != to) {  // исключаем петли
@@ -63,7 +63,7 @@ size_t AdjacencyList::addEdge(size_t from, size_t to) {
     return p_edges;
 };
 
-size_t AdjacencyList::addVertex(uint8_t k) {
+size_t AdjacencyList::addVertices(uint8_t k) {
     for (uint8_t i = 0; i < k; i++) {
         p_adjList.emplace_back();
         p_n++;

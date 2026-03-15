@@ -9,7 +9,8 @@
 
 #include "igraph.hpp"
 
-void EdgeListParser::parse(const std::string& filename, IGraph& g) const {
+void EdgeListParser::parse(const std::string& filename,
+                           IUnweightedGraph& g) const {
     // TODO: Добваить третий аргумент format="raw" /
     // / "snap", "metis", который будет управлять
     // чтением первой строки
@@ -28,7 +29,8 @@ void EdgeListParser::parse(const std::string& filename, IGraph& g) const {
     file.close();
 }
 
-void AdjMatrixParser::parse(const std::string& filename, IGraph& g) const {
+void AdjMatrixParser::parse(const std::string& filename,
+                            IUnweightedGraph& g) const {
     // TODO: Добваить третий аргумент format="raw" /
     // / "snap", "metis", который будет управлять
     // чтением первой строки

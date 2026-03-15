@@ -20,7 +20,7 @@ class AdjacencyList : public IUnweightedGraph {
     // геттеры
     std::vector<size_t> getNeighbors(size_t vertex) const override;
 
-    size_t getVertexCount() const override;
+    size_t getVerticesCount() const override;
     size_t getV() const override;
     size_t getEdgesCount() const override;
     size_t getE() const override;
@@ -32,7 +32,7 @@ class AdjacencyList : public IUnweightedGraph {
    public:
     // модификаторы
     size_t addEdge(size_t from, size_t to) override;
-    size_t addVertex(uint8_t k = 1) override;
+    size_t addVertices(uint8_t k = 1) override;
     size_t rmEdges(size_t from, size_t to, size_t occurrences = 1) override;
 
    public:

@@ -13,7 +13,8 @@ class IParser {
      */
    public:
     virtual ~IParser() = default;
-    virtual void parse(const std::string& filename, IGraph& g) const = 0;
+    virtual void parse(const std::string& filename,
+                       IUnweightedGraph& g) const = 0;
     // virtual void parseFromEdgeList(
     //     const std::vector<std::pair<int, int>>& edgeList, IGraph& g) const =
     //     0;
@@ -27,7 +28,7 @@ class EdgeListParser : public IParser {
      * Графовый парсер из списка ребер
      */
    public:
-    void parse(const std::string& filename, IGraph& g) const override;
+    void parse(const std::string& filename, IUnweightedGraph& g) const override;
     // void parseFromEdgeList(const std::vector<std::pair<int, int>>& edgeList,
     //                        IGraph& g) const override;
 };
@@ -37,7 +38,7 @@ class AdjMatrixParser : public IParser {
      * Графовый парсер из матрицы смежности
      */
    public:
-    void parse(const std::string& filename, IGraph& g) const override;
+    void parse(const std::string& filename, IUnweightedGraph& g) const override;
     // void parseFromAdjMatrix(const std::vector<std::vector<int>>& adjList,
     //                         IGraph& g) const override;
    private:
