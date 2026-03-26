@@ -2,47 +2,59 @@
 #define PARSERS_HPP
 
 #include <fstream>
+#include <unordered_map>
 
 #include "igraph.hpp"
 
 class IParser {
-    /* IParser
-     * Базовый интерфейс для парсера графа
-     *
-     * Требуется для реализации интерфейсов
-     */
    public:
     virtual ~IParser() = default;
-    virtual void parse(const std::string& filename,
-                       IUnweightedGraph& g) const = 0;
-    // virtual void parseFromEdgeList(
-    //     const std::vector<std::pair<int, int>>& edgeList, IGraph& g) const =
-    //     0;
-    // virtual void parseFromAdjMatrix(const std::vector<std::vector<int>>&
-    // adjList,
-    //                         IGraph& g) const override;
+
+    /**
+     * @brief Основной метод парсинга
+     * @param filename Путь к файлу
+     * @param g Ссылка на интерфейс графа
+     */
+    virtual void parse(const std::string& filename, IGraph& g) const = 0;
 };
 
-class EdgeListParser : public IParser {
+class RawEdgeListParser : public IParser {
     /* EdgeListParser
      * Графовый парсер из списка ребер
      */
    public:
-    void parse(const std::string& filename, IUnweightedGraph& g) const override;
-    // void parseFromEdgeList(const std::vector<std::pair<int, int>>& edgeList,
-    //                        IGraph& g) const override;
+    void parse(const std::string& filename, IGraph& g) const override;
 };
 
-class AdjMatrixParser : public IParser {
+class RawMatrixParser : public IParser {
     /* AdjacencyListParser
      * Графовый парсер из матрицы смежности
      */
    public:
-    void parse(const std::string& filename, IUnweightedGraph& g) const override;
-    // void parseFromAdjMatrix(const std::vector<std::vector<int>>& adjList,
-    //                         IGraph& g) const override;
+    void parse(const std::string& filename, IGraph& g) const override;
+
    private:
     size_t peekMatrixSize(std::ifstream& file) const;
+};
+
+class DIMACSParser : public IParser {
+    /* DIMACSParser
+     * Графовый парсер из формата DIMACS
+     */
+   public:
+    void parse(const std::string& filename, IGraph& g) const override;
+};
+
+class SNAPParser : public IParser {
+   private:
+    mutable std::unordered_map<size_t, size_t> id_map;
+    mutable size_t next_internal_id = 0;
+
+   private:
+    size_t getInternalId(size_t external_id) const;
+
+   public:
+    void parse(const std::string& filename, IGraph& g) const override;
 };
 
 #endif  // PARSERS_HPP
