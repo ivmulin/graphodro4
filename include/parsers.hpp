@@ -6,6 +6,24 @@
 
 #include "igraph.hpp"
 
+enum class CurrentParser { EDGE_LIST, ADJACENCY_MATRIX, DIMACS, SNAP };
+
+class IParser;
+
+class ParserUtility {
+   private:
+    CurrentParser state;
+    IParser* parser;
+
+   public:
+    ParserUtility(CurrentParser parser_code);
+    ~ParserUtility();
+
+    void reassignParser(CurrentParser new_parser_code);
+
+    void parse(const std::string& filename, IGraph& g) const;
+};
+
 class IParser {
    public:
     virtual ~IParser() = default;
@@ -18,7 +36,7 @@ class IParser {
     virtual void parse(const std::string& filename, IGraph& g) const = 0;
 };
 
-class RawEdgeListParser : public IParser {
+class EdgeListParser : public IParser {
     /* EdgeListParser
      * Графовый парсер из списка ребер
      */
@@ -26,8 +44,8 @@ class RawEdgeListParser : public IParser {
     void parse(const std::string& filename, IGraph& g) const override;
 };
 
-class RawMatrixParser : public IParser {
-    /* AdjacencyListParser
+class AdjacencyMatrixParser : public IParser {
+    /* AdjacencyMatrixParser
      * Графовый парсер из матрицы смежности
      */
    public:

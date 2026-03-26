@@ -4,13 +4,12 @@
 #include "parsers.hpp"
 
 using Graph = AdjacencyList;
-using Parser = SNAPParser;
 
 int main() {
     std::cout << "Hello!\n";
 
     Graph g;
-    Parser parser;
+    ParserUtility parser(CurrentParser::SNAP);
 
     parser.parse("samples/SNAP.3980.edges", g);
 

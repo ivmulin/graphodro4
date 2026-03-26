@@ -7,9 +7,53 @@
 #include "igraph.hpp"
 #include "parsers.hpp"
 
-// ============= RawEdgeListParser ============= //
+ParserUtility::ParserUtility(CurrentParser parser_code) : state(parser_code) {
+    switch (parser_code) {
+        case CurrentParser::EDGE_LIST:
+            parser = new EdgeListParser();
+            break;
+        case CurrentParser::ADJACENCY_MATRIX:
+            parser = new AdjacencyMatrixParser();
+            break;
+        case CurrentParser::DIMACS:
+            parser = new DIMACSParser();
+            break;
+        case CurrentParser::SNAP:
+            parser = new SNAPParser();
+            break;
+    }
+}
 
-void RawEdgeListParser::parse(const std::string& filename, IGraph& g) const {
+void ParserUtility::reassignParser(CurrentParser new_parser_code) {
+    delete parser;
+    state = new_parser_code;
+    switch (new_parser_code) {
+        case CurrentParser::EDGE_LIST:
+            parser = new EdgeListParser();
+            break;
+        case CurrentParser::ADJACENCY_MATRIX:
+            parser = new AdjacencyMatrixParser();
+            break;
+        case CurrentParser::DIMACS:
+            parser = new DIMACSParser();
+            break;
+        case CurrentParser::SNAP:
+            parser = new SNAPParser();
+            break;
+    }
+}
+
+void ParserUtility::parse(const std::string& filename, IGraph& g) const {
+    parser->parse(filename, g);
+}
+
+ParserUtility::~ParserUtility() {
+    delete parser;
+}
+
+// ============= EdgeListParser ============= //
+
+void EdgeListParser::parse(const std::string& filename, IGraph& g) const {
     std::ifstream file(filename);
     if (!file.is_open()) throw std::runtime_error("Cannot open edge list file");
 
@@ -31,9 +75,10 @@ void RawEdgeListParser::parse(const std::string& filename, IGraph& g) const {
     }
 }
 
-// ============= RawMatrixParser ============= //
+// ============= AdjacencyMatrixParser ============= //
 
-void RawMatrixParser::parse(const std::string& filename, IGraph& g) const {
+void AdjacencyMatrixParser::parse(const std::string& filename,
+                                  IGraph& g) const {
     std::ifstream file(filename);
     if (!file.is_open()) {
         throw std::runtime_error("RawParser: Cannot open " + filename);
@@ -67,7 +112,7 @@ void RawMatrixParser::parse(const std::string& filename, IGraph& g) const {
     }
 }
 
-size_t RawMatrixParser::peekMatrixSize(std::ifstream& file) const {
+size_t AdjacencyMatrixParser::peekMatrixSize(std::ifstream& file) const {
     std::string firstLine;
     if (!std::getline(file, firstLine)) {
         return 0;
