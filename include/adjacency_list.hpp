@@ -4,7 +4,6 @@
 #include <sys/types.h>
 
 #include <cstddef>
-#include <cstdint>
 #include <iostream>
 #include <vector>
 
@@ -12,31 +11,102 @@
 
 class AdjacencyList : public IUnweightedGraph {
    private:
+    /// @brief Количество вершин в графе
     size_t p_n = 0;
+    /// @brief Количество ребер в графе
     size_t p_edges = 0;
+    /// @brief Список смежности
     std::vector<std::vector<size_t>> p_adjList;
 
    public:
-    // геттеры
+    /**
+     * @brief Получить список соседей вершины
+     * @param vertex Индекс вершины
+     * @return Вектор с индексами соседних вершин
+     */
     std::vector<size_t> getNeighbors(size_t vertex) const override;
 
+    /**
+     * @brief Выделить память для вершин
+     * @param n Количество вершин
+     */
+    void allocate(size_t n) override;
+
+    /**
+     * @brief Получить общее количество вершин
+     * @return Количество вершин
+     */
     size_t getVerticesCount() const override;
+
+    /**
+     * @brief Псевдоним для getVerticesCount()
+     * @return Количество вершин
+     */
     size_t getV() const override;
+
+    /**
+     * @brief Получить общее количество ребер
+     * @return Количество ребер
+     */
     size_t getEdgesCount() const override;
+
+    /**
+     * @brief Псевдоним для getEdgesCount()
+     * @return Количество ребер
+     */
     size_t getE() const override;
 
+    /**
+     * @brief Получить степень вершины (количество смежных ребер)
+     * @param vertex Индекс вершины
+     * @return Степень вершины
+     */
     size_t deg(size_t vertex) const override;
+
+    /**
+     * @brief Оператор доступа к списку соседей вершины (без проверки границ)
+     * @param vertex Индекс вершины
+     * @return Константная ссылка на вектор соседей
+     */
     const std::vector<size_t>& operator[](size_t vertex) const;
+
+    /**
+     * @brief Метод доступа к списку соседей вершины (с проверкой границ)
+     * @param vertex Индекс вершины
+     * @return Константная ссылка на вектор соседей
+     */
     const std::vector<size_t>& at(size_t vertex) const;
 
    public:
-    // модификаторы
+    /**
+     * @brief Добавить ребро между двумя вершинами
+     * @param from Индекс первой вершины
+     * @param to Индекс второй вершины
+     * @return Обновленное количество ребер в графе
+     */
     size_t addEdge(size_t from, size_t to) override;
-    size_t addVertices(uint8_t k = 1) override;
+
+    /**
+     * @brief Добавить k новых изолированных вершин в граф
+     * @param k Количество добавляемых вершин
+     * @return Обновленное общее количество вершин
+     */
+    size_t addVertices(size_t k = 1) override;
+
+    /**
+     * @brief Удалить ребра между двумя вершинами
+     * @param from Индекс первой вершины
+     * @param to Индекс второй вершины
+     * @param occurrences Количество удаляемых вхождений ребра
+     * @return Количество фактически удаленных ребер
+     */
     size_t rmEdges(size_t from, size_t to, size_t occurrences = 1) override;
 
-   public:
-    // всякое
+   private:
+    /**
+     * @brief Внутренний метод для вывода структуры списка смежности в поток
+     * @param os Ссылка на поток вывода
+     */
     void _print(std::ostream& os) const override;
 };
 
