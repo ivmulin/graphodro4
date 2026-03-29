@@ -216,7 +216,6 @@ void GraphMetrics::computeRandomBridges(size_t v, size_t p,
             vertexHashes[to] ^= edgeHash;
         } else if (visited[to] == 0) {
             // Ребро дерева DFS
-            size_t currentBridgesBefore = bridgeCount;
 
             computeRandomBridges(to, v, vertexHashes, visited, tin, timer,
                                  bridgeCount);

@@ -9,8 +9,16 @@
 std::vector<size_t> AdjacencyMatrix::getNeighbors(size_t vertex) const {
     if (vertex >= p_n) throw std::out_of_range("Vertex out of range");
 
-    auto start = p_adjMatrix.begin() + (vertex * p_n);
-    return std::vector<size_t>(start, start + p_n);
+    std::vector<size_t> neighbors;
+    neighbors.reserve(p_n);
+    size_t offset = vertex * p_n;
+    for (size_t j = 0; j < p_n; ++j) {
+        if (p_adjMatrix[offset + j] !=
+            0) {  // Если в ячейке не ноль — ребро есть
+            neighbors.push_back(j);
+        }
+    }
+    return neighbors;
 };
 
 size_t AdjacencyMatrix::getVerticesCount() const {
@@ -31,7 +39,7 @@ size_t AdjacencyMatrix::getE() const {
 
 bool AdjacencyMatrix::hasEdge(size_t from, size_t to) const {
     if (from >= p_n || to >= p_n)
-        throw std::invalid_argument("Indices out of range!");
+        throw std::out_of_range("Indices out of range!");
 
     if (p_adjMatrix[from * p_n + to]) return true;
 
@@ -75,10 +83,38 @@ void AdjacencyMatrix::forEachEdge(
 
 // ======== МОДИФИКАТОРЫ ========
 
-void AdjacencyMatrix::reallocate(size_t n) {
-    p_adjMatrix.assign(n * n, 0);
-    p_n = n;
-    p_edges = 0;
+void AdjacencyMatrix::reallocate(size_t new_n) {
+    if (new_n == p_n) return;
+
+    // 1. Создаем новую чистую матрицу
+    std::vector<size_t> new_storage(new_n * new_n, 0);
+
+    // 2. Определяем лимит копирования (минимум из старого и нового размеров)
+    size_t copy_limit = std::min(p_n, new_n);
+
+    // 3. Покоординатное копирование (самый важный этап)
+    for (size_t i = 0; i < copy_limit; ++i) {
+        for (size_t j = 0; j < copy_limit; ++j) {
+            // Переносим значение из старой сетки в новую
+            new_storage[i * new_n + j] = p_adjMatrix[i * p_n + j];
+        }
+    }
+
+    // 4. Обновляем состояние
+    p_adjMatrix = std::move(new_storage);
+
+    // Если уменьшили граф — пересчитываем p_edges
+    if (new_n < p_n) {
+        size_t actual_edges = 0;
+        for (size_t i = 0; i < new_n; ++i) {
+            for (size_t j = i; j < new_n; ++j) {
+                if (p_adjMatrix[i * new_n + j] > 0) actual_edges++;
+            }
+        }
+        p_edges = actual_edges;
+    }
+
+    p_n = new_n;
 }
 
 void AdjacencyMatrix::allocate(size_t n) {
