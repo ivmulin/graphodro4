@@ -2,7 +2,6 @@
 #include <cassert>
 #include <cstddef>
 #include <graphodro4/core/adjacency_list.hpp>
-#include <graphodro4/debugging/supplementary_tools.hpp>
 #include <stdexcept>
 
 // ======== ГЕТТЕРЫ ==========
@@ -29,7 +28,7 @@ size_t AdjacencyList::getE() const {
 
 bool AdjacencyList::hasEdge(size_t from, size_t to) const {
     if (from >= p_n || to >= p_n)
-        throw std::invalid_argument("Indices out of range!");
+        throw std::out_of_range("Indices out of range!");
 
     if (std::find(p_adjList[from].begin(), p_adjList[from].end(), to) !=
         p_adjList[from].end())
@@ -61,12 +60,32 @@ const std::vector<size_t>& AdjacencyList::at(size_t vertex) const {
 // ======== МОДИФИКАТОРЫ ========
 
 void AdjacencyList::reallocate(size_t n) {
-    p_adjList.clear();
+    if (n == p_n) return;
 
-    p_n = n;
-    p_edges = 0;
+    size_t old_n = p_n;
+
+    if (n < old_n) {
+        size_t totalRemoved = 0;
+        // 1. Считаем ребра, которые выходят из остающихся вершин во внешние
+        for (size_t i = 0; i < n; ++i) {
+            auto& neighbors = p_adjList[i];
+            auto it = std::remove_if(neighbors.begin(), neighbors.end(),
+                                     [n](size_t v) { return v >= n; });
+            totalRemoved += std::distance(it, neighbors.end());
+            neighbors.erase(it, neighbors.end());
+        }
+
+        // 2. Считаем все ребра в удаляемых списках (i >= n)
+        for (size_t i = n; i < old_n; ++i) {
+            totalRemoved += p_adjList[i].size();
+        }
+
+        // Каждое ребро было посчитано дважды (u->v и v->u)
+        p_edges -= (totalRemoved / 2);
+    }
 
     p_adjList.resize(n);
+    p_n = n;
 }
 
 void AdjacencyList::allocate(size_t n) {
@@ -148,4 +167,22 @@ void AdjacencyList::_print(std::ostream& os) const {
     } else {
         os << "Graph is EMPTY!";
     }
+}
+
+size_t AdjacencyList::removeFirstN(std::vector<size_t>& vector, size_t target,
+                                   size_t occurrences) {
+    size_t count = 0;
+    for (size_t i = 0; i < vector.size() && count < occurrences;) {
+        if (vector[i] == target) {
+            // Swap with the last element and remove it
+            vector[i] = std::move(vector.back());
+            vector.pop_back();
+            count++;
+            // Note: Don't increment 'i' here because the new
+            // vec[i] (the former back element) needs to be checked
+        } else {
+            i++;
+        }
+    }
+    return count;
 }

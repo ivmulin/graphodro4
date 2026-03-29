@@ -18,9 +18,9 @@ enum class BaseModel { TREE, CYCLE };
 }
 
 size_t GraphFactory::complete(IGraph& g, size_t n) {
-    g.reallocate(n);
-    for (size_t i = 1; i < n; i++) {
-        for (size_t j = i + 2; j < n; j++) {
+    g.allocate(n);
+    for (size_t i = 0; i < n; i++) {
+        for (size_t j = i + 1; j < n; j++) {
             g.addEdge(i, j);
         }
     }
@@ -28,7 +28,7 @@ size_t GraphFactory::complete(IGraph& g, size_t n) {
 }
 
 size_t GraphFactory::completeBipartite(IGraph& g, size_t n, size_t m) {
-    g.reallocate(n + m);
+    g.allocate(n + m);
     for (size_t i = 0; i < n; i++) {
         for (size_t j = n; j < n + m; j++) {
             g.addEdge(i, j);
@@ -38,7 +38,7 @@ size_t GraphFactory::completeBipartite(IGraph& g, size_t n, size_t m) {
 }
 
 size_t GraphFactory::tree(IGraph& g, size_t n) {
-    g.reallocate(n);
+    g.allocate(n);
 
     if (n == 2) g.addEdge(0, 1);
     if (n < 3) return g.getEdgesCount();
@@ -53,7 +53,7 @@ size_t GraphFactory::tree(IGraph& g, size_t n) {
 }
 
 size_t GraphFactory::star(IGraph& g, size_t n) {
-    g.reallocate(n);
+    g.allocate(n);
 
     std::uniform_int_distribution<size_t> dist(0, n - 1);
     size_t randIndex = dist(GraphFactory::gen);
@@ -73,7 +73,7 @@ size_t GraphFactory::cycle(IGraph& g, size_t n) {
 }
 
 size_t GraphFactory::path(IGraph& g, size_t n) {
-    g.reallocate(n);
+    g.allocate(n);
 
     for (size_t i = 1; i < n; i++) {
         g.addEdge(i, i - 1);
@@ -100,7 +100,7 @@ size_t GraphFactory::wheel(IGraph& g, size_t n) {
 size_t GraphFactory::random(IGraph& g, size_t n, const double p) {
     std::bernoulli_distribution dist(p);
 
-    g.reallocate(n);
+    g.allocate(n);
     for (size_t i = 0; i < n; i++) {
         for (size_t j = i + 1; j < n; j++) {
             if (dist(GraphFactory::gen)) {
@@ -123,7 +123,7 @@ size_t GraphFactory::cubic(IGraph& g, size_t n) {
 
     bool success = false;
     while (!success) {
-        g.reallocate(n);
+        g.allocate(n);
         // Создаем список всех доступных слотов: {0,0,0, 1,1,1, ...,
         // n-1,n-1,n-1}
         std::vector<size_t> slots;
@@ -161,7 +161,7 @@ size_t GraphFactory::fixedComponents(IGraph& g, size_t n, size_t k,
     std::cout << "Partition is ";
     debugging::print_vector(sizes);
 
-    g.reallocate(n);
+    g.allocate(n);
 
     size_t offset = 0;
     std::uniform_real_distribution<double> realDist(0, 1);
@@ -206,7 +206,7 @@ size_t GraphFactory::fixedBridges(IGraph& g, size_t n, size_t k,
         throw std::invalid_argument("Недостаточно вершин для k+1 циклов");
     }
 
-    g.reallocate(n);
+    g.allocate(n);
 
     // Разбиваем вершины на k+1 группу
     std::vector<size_t> sizes = splitVertices(n, k + 1);
@@ -261,7 +261,7 @@ size_t GraphFactory::fixedArticulationPoints(IGraph& g, size_t n, size_t k,
                                              const double p) {
     if (k >= n - 1) throw std::invalid_argument("Too many articulation points");
 
-    g.reallocate(n);
+    g.allocate(n);
     if (n == 0) return 0;
 
     // Распределяем n-k "внутренних" вершин между k+1 блоками
@@ -321,7 +321,7 @@ size_t GraphFactory::fixedTwoBridges(IGraph& g, size_t n, size_t k,
                                      const double p) {
     if (n < 2 * k + 2) throw std::invalid_argument("Too few vertices");
 
-    g.reallocate(n);
+    g.allocate(n);
     std::vector<size_t> sizes = splitVertices(n, k + 1);
     size_t current_offset = 0;
     std::vector<std::pair<size_t, size_t>> connectors;
@@ -367,7 +367,7 @@ size_t GraphFactory::halin(IGraph& g, size_t n) {
     if (n < 4)
         throw std::invalid_argument("Halin graph requires at least 4 vertices");
 
-    g.reallocate(n);
+    g.allocate(n);
 
     // Вариант 1: Колесо — это частный случай графа Халина
     if (n <= 6) {
