@@ -30,7 +30,15 @@ cmake -S . -B build
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug 
 ```
 
-Для создания файла конфигурации рекомендуется приписать флаг `DCMAKE_EXPORT_COMPILE_COMMANDS=ON`
+Для создания файла конфигурации рекомендуется приписать флаг `DCMAKE_EXPORT_COMPILE_COMMANDS=ON`:
+
+```bash
+# По умолчанию (Release)
+cmake -S . -B build DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+# В режиме отладки (Debug)
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+```
 ### 2. Сборка (после изменений кода)
 
 Компиляция проекта из существующего кэша:
@@ -79,10 +87,10 @@ cmake --build build --config Debug && .\graphodro4.exe
 
 Граф необходимо уметь читать из четырех популярных форматов. Ожидается разбиение реализации парсеров через наследование.
 
-- [ ] [Список ребер](https://en.wikipedia.org/wiki/Edge_list)
-- [ ] [Матрица смежности](https://ru.wikipedia.org/wiki/%D0%9C%D0%B0%D1%82%D1%80%D0%B8%D1%86%D0%B0_%D1%81%D0%BC%D0%B5%D0%B6%D0%BD%D0%BE%D1%81%D1%82%D0%B8)
-- [ ] Графы из коллекции [DIMACS Coloring Instances](https://mat.tepper.cmu.edu/COLOR/instances.html)
-- [ ] Большие сетевые графы [SNAP Dataset Collection](https://snap.stanford.edu/data/)
+- [x] [Список ребер](https://en.wikipedia.org/wiki/Edge_list)
+- [x] [Матрица смежности](https://ru.wikipedia.org/wiki/%D0%9C%D0%B0%D1%82%D1%80%D0%B8%D1%86%D0%B0_%D1%81%D0%BC%D0%B5%D0%B6%D0%BD%D0%BE%D1%81%D1%82%D0%B8)
+- [x] Графы из коллекции [DIMACS Coloring Instances](https://mat.tepper.cmu.edu/COLOR/instances.html)
+- [x] Большие сетевые графы [SNAP Dataset Collection](https://snap.stanford.edu/data/)
 
 ### Сериализация графов
 

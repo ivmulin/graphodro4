@@ -1,6 +1,7 @@
 #ifndef HELPERS_HPP
 #define HELPERS_HPP
 
+#include <cstddef>
 #include <iostream>
 #include <vector>
 

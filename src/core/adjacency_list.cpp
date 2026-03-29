@@ -1,10 +1,9 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <graphodro4/core/adjacency_list.hpp>
+#include <graphodro4/debugging/supplementary_tools.hpp>
 #include <stdexcept>
-
-#include "adjacency_list.hpp"
-#include "supplementary_tools.hpp"
 
 // ======== ГЕТТЕРЫ ==========
 
@@ -28,6 +27,17 @@ size_t AdjacencyList::getE() const {
     return p_edges;
 };
 
+bool AdjacencyList::hasEdge(size_t from, size_t to) const {
+    if (from >= p_n || to >= p_n)
+        throw std::invalid_argument("Indices out of range!");
+
+    if (std::find(p_adjList[from].begin(), p_adjList[from].end(), to) !=
+        p_adjList[from].end())
+        return true;
+
+    return false;
+}
+
 size_t AdjacencyList::deg(size_t vertex) const {
     if (vertex < p_adjList.size()) return p_adjList[vertex].size();
 
@@ -35,8 +45,9 @@ size_t AdjacencyList::deg(size_t vertex) const {
 }
 
 const std::vector<size_t>& AdjacencyList::operator[](size_t vertex) const {
-    // В низкоуровневых операторах [] обычно не делают проверок для скорости,
-    // полагаясь на вызывающего (аналогично std::vector::operator[]).
+    // В низкоуровневых операторах [] обычно не делают проверок для
+    // скорости, полагаясь на вызывающего (аналогично
+    // std::vector::operator[]).
     return p_adjList[vertex];
 }
 
@@ -48,6 +59,15 @@ const std::vector<size_t>& AdjacencyList::at(size_t vertex) const {
 }
 
 // ======== МОДИФИКАТОРЫ ========
+
+void AdjacencyList::reallocate(size_t n) {
+    p_adjList.clear();
+
+    p_n = n;
+    p_edges = 0;
+
+    p_adjList.resize(n);
+}
 
 void AdjacencyList::allocate(size_t n) {
     p_adjList.assign(n, std::vector<size_t>());
@@ -102,17 +122,30 @@ size_t AdjacencyList::rmEdges(size_t from, size_t to, size_t occurrences) {
     return fromToRemovals;
 }
 
+void AdjacencyList::forEachEdge(
+    std::function<void(size_t, size_t)> callback) const {
+    for (size_t i = 0; i < p_n; i++) {
+        for (size_t j : p_adjList[i]) {
+            if (i <= j) callback(i, j);
+        }
+    }
+}
+
 // ======== ВСЯКОЕ =========
 
 // Перегрузка std::cout << AdjacencyList
 void AdjacencyList::_print(std::ostream& os) const {
     os << "Adjacency List of G (|V|=" << p_n << ", |E|=" << p_edges << "):\n";
-    for (size_t i = 0; i < p_adjList.size(); ++i) {
-        os << "deg(" << i << ")=" << deg(i) << "\t";
-        os << "G[" << i << "]={ ";
-        for (size_t neighbor : p_adjList[i]) {
-            os << neighbor << " ";
+    if (p_n) {
+        for (size_t i = 0; i < p_n; ++i) {
+            os << "deg(" << i << ")=" << deg(i) << "\t";
+            os << "G[" << i << "]={ ";
+            for (size_t neighbor : p_adjList[i]) {
+                os << neighbor << " ";
+            }
+            os << "}" << (i == p_adjList.size() - 1 ? "." : ";\n");
         }
-        os << "}" << (i == p_adjList.size() - 1 ? "." : ";\n");
+    } else {
+        os << "Graph is EMPTY!";
     }
 }
