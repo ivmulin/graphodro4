@@ -1,11 +1,10 @@
 #include <fstream>
+#include <graphodro4/core/igraph.hpp>
+#include <graphodro4/parsers/parsers.hpp>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
-
-#include "igraph.hpp"
-#include "parsers.hpp"
 
 ParserUtility::ParserUtility(CurrentParser parser_code) : state(parser_code) {
     switch (parser_code) {
