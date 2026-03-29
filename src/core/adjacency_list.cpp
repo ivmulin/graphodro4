@@ -27,6 +27,17 @@ size_t AdjacencyList::getE() const {
     return p_edges;
 };
 
+bool AdjacencyList::hasEdge(size_t from, size_t to) const {
+    if (from >= p_n || to >= p_n)
+        throw std::invalid_argument("Indices out of range!");
+
+    if (std::find(p_adjList[from].begin(), p_adjList[from].end(), to) !=
+        p_adjList[from].end())
+        return true;
+
+    return false;
+}
+
 size_t AdjacencyList::deg(size_t vertex) const {
     if (vertex < p_adjList.size()) return p_adjList[vertex].size();
 
@@ -34,8 +45,9 @@ size_t AdjacencyList::deg(size_t vertex) const {
 }
 
 const std::vector<size_t>& AdjacencyList::operator[](size_t vertex) const {
-    // В низкоуровневых операторах [] обычно не делают проверок для скорости,
-    // полагаясь на вызывающего (аналогично std::vector::operator[]).
+    // В низкоуровневых операторах [] обычно не делают проверок для
+    // скорости, полагаясь на вызывающего (аналогично
+    // std::vector::operator[]).
     return p_adjList[vertex];
 }
 
@@ -108,6 +120,15 @@ size_t AdjacencyList::rmEdges(size_t from, size_t to, size_t occurrences) {
     }
 
     return fromToRemovals;
+}
+
+void AdjacencyList::forEachEdge(
+    std::function<void(size_t, size_t)> callback) const {
+    for (size_t i = 0; i < p_n; i++) {
+        for (size_t j : p_adjList[i]) {
+            if (i <= j) callback(i, j);
+        }
+    }
 }
 
 // ======== ВСЯКОЕ =========

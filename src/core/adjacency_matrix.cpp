@@ -29,6 +29,15 @@ size_t AdjacencyMatrix::getE() const {
     return p_edges;
 };
 
+bool AdjacencyMatrix::hasEdge(size_t from, size_t to) const {
+    if (from >= p_n || to >= p_n)
+        throw std::invalid_argument("Indices out of range!");
+
+    if (p_adjMatrix[from * p_n + to]) return true;
+
+    return false;
+}
+
 size_t AdjacencyMatrix::deg(size_t vertex) const {
     if (vertex >= p_n) throw std::out_of_range("Vertex index out of range");
 
@@ -53,6 +62,15 @@ const size_t* AdjacencyMatrix::at(size_t vertex) const {
         throw std::out_of_range("Vertex index out of range");
     }
     return &p_adjMatrix[vertex * p_n];
+}
+
+void AdjacencyMatrix::forEachEdge(
+    std::function<void(size_t, size_t)> callback) const {
+    for (size_t i = 0; i < p_n; i++) {
+        for (size_t j = i; j < p_n; j++) {
+            if (p_adjMatrix[i * p_n + j]) callback(i, j);
+        }
+    }
 }
 
 // ======== МОДИФИКАТОРЫ ========
