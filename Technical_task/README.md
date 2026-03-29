@@ -30,7 +30,15 @@ cmake -S . -B build
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug 
 ```
 
-Для создания файла конфигурации рекомендуется приписать флаг `DCMAKE_EXPORT_COMPILE_COMMANDS=ON`
+Для создания файла конфигурации рекомендуется приписать флаг `DCMAKE_EXPORT_COMPILE_COMMANDS=ON`:
+
+```bash
+# По умолчанию (Release)
+cmake -S . -B build DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+# В режиме отладки (Debug)
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+```
 ### 2. Сборка (после изменений кода)
 
 Компиляция проекта из существующего кэша:
