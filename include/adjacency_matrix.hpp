@@ -1,5 +1,5 @@
-#ifndef ADJACENCY_LIST_HPP
-#define ADJACENCY_LIST_HPP
+#ifndef ADJ_MATRIX_HPP
+#define ADJ_MATRIX_HPP
 
 #include <sys/types.h>
 
@@ -9,14 +9,17 @@
 
 #include "igraph.hpp"
 
-class AdjacencyList : public IUnweightedGraph {
+class AdjacencyMatrix : public IUnweightedGraph {
    private:
     /// @brief Количество вершин в графе
     size_t p_n = 0;
     /// @brief Количество ребер в графе
     size_t p_edges = 0;
     /// @brief Список смежности
-    std::vector<std::vector<size_t>> p_adjList;
+    std::vector<size_t> p_adjMatrix;
+
+    size_t p_cols = 0;
+    size_t p_rows = 0;
 
    public:
     /**
@@ -68,14 +71,16 @@ class AdjacencyList : public IUnweightedGraph {
      * @param vertex Индекс вершины
      * @return Константная ссылка на вектор соседей
      */
-    const std::vector<size_t>& operator[](size_t vertex) const;
+    const size_t* operator[](size_t vertex) const;
+
+    size_t* operator[](size_t vertex);
 
     /**
      * @brief Метод доступа к списку соседей вершины (с проверкой границ)
      * @param vertex Индекс вершины
      * @return Константная ссылка на вектор соседей
      */
-    const std::vector<size_t>& at(size_t vertex) const;
+    const size_t* at(size_t vertex) const;
 
    public:
     /**
