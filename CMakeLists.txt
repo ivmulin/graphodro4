@@ -1,33 +1,78 @@
 cmake_minimum_required(VERSION 3.15)
 project(GraphoDro4 VERSION 1.0)
 
-# ProjectSettings: Установка стандарта C++17 и отключение расширений
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# BuildTypeManagement: Установка Release как типа сборки по умолчанию
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
     message(STATUS "No build type selected, defaulting to Release")
 endif()
 
-# SourceDiscovery: Автоматический поиск всех исходников и заголовков
-file(GLOB_RECURSE SOURCES "src/*.cpp")
-file(GLOB_RECURSE HEADERS "include/*.hpp" "include/*.h")
-
-# OutputDirectoryConfiguration: Исполняемый файл будет создан в корне проекта
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-# ExecutableTargetCreation: Определение финального бинарника
-add_executable(graphodro4 ${SOURCES} ${HEADERS})
+set(LIB_SOURCES
+    src/adjacency_list.cpp
+    src/parsers.cpp
+    src/graphviz_serializer.cpp
+)
 
-# IncludePathConfiguration: Добавление папки include в пути поиска
-target_include_directories(graphodro4 PRIVATE include)
+set(LIB_HEADERS
+    include/igraph.hpp
+    include/adjacency_list.hpp
+    include/parsers.hpp
+    include/graphviz_serializer.hpp
+    include/_debugging.hpp
+)
 
-# CompilerWarningConfiguration: Настройка строгого контроля предупреждений
-if(MSVC)
-    target_compile_options(graphodro4 PRIVATE /W4)
+add_library(graphlib STATIC ${LIB_SOURCES} ${LIB_HEADERS})
+target_include_directories(graphlib PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/external
+)
+
+add_executable(graphodro4 src/graphodro4.cpp)
+target_link_libraries(graphodro4 PRIVATE graphlib)
+
+file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
+
+if(TEST_SOURCES)
+    add_executable(test_serializer 
+        ${TEST_SOURCES}
+        # graphodro4.cpp НЕ включать! Только библиотека
+    )
+    target_link_libraries(test_serializer PRIVATE graphlib)
+    
+    enable_testing()
+    add_test(NAME GraphVizSerializerTests COMMAND test_serializer)
+    
+    add_custom_target(run_tests
+        COMMAND test_serializer
+        DEPENDS test_serializer
+        COMMENT "Running all tests..."
+    )
+    
+    message(STATUS "Tests found: ${TEST_SOURCES}")
 else()
-    target_compile_options(graphodro4 PRIVATE -Wall -Wextra -Wpedantic)
+    message(STATUS "No tests found in 'tests/' directory")
 endif()
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/samples")
+    add_custom_command(TARGET graphodro4 POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/samples
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/samples
+        COMMENT "Copying samples/ for graphodro4"
+    )
+    if(TEST_SOURCES)
+        add_custom_command(TARGET test_serializer POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_CURRENT_SOURCE_DIR}/samples
+                ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/samples
+            COMMENT "Copying samples/ for tests"
+        )
+    endif()
+endif()
+
+message(STATUS "Build configuration complete!")
