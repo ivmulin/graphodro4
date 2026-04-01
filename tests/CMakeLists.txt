@@ -13,7 +13,7 @@ add_executable(unit_tests
     test_core.cpp       # Тесты функционала графов
     test_metrics.cpp    # Тесты для GraphMetrics
     test_generators.cpp # Тесты для проверки инвариантов генераторов
-
+    test_serializer.cpp # Тесты сериализаторов
 )
 
 # Линкуемся к библиотеке и Catch2
