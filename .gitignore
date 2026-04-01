@@ -21,6 +21,11 @@ graphodro4.exe
 unit_tests
 *.out
 *.app
+*.exe
+
+# --- Executables outputs ---
+# Выходные файлы
+*.dot
 
 # --- IDE & Editor Specific ---
 # Visual Studio (Windows)
