@@ -54,7 +54,8 @@ ParserUtility::~ParserUtility() {
 
 void EdgeListParser::parse(const std::string& filename, IGraph& g) const {
     std::ifstream file(filename);
-    if (!file.is_open()) throw std::runtime_error("Cannot open edge list file");
+    if (!file.is_open())
+        throw std::runtime_error("Cannot open edge list file " + filename);
 
     std::string line;
     while (std::getline(file, line)) {

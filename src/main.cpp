@@ -1,56 +1,45 @@
-#include <ncurses.h>
+#include <graphodro4/core/graphs.hpp>
+#include <graphodro4/parsers/parsers.hpp>
 
-#include <string>
-#include <vector>
+#include "graphodro4/generators/generator.hpp"
 
-/**
- * @brief Demonstration of a TUI menu using ncurses.
- * Logic: We highlight a "door" and trigger an action upon Enter.
- */
+using Graph = AdjacencyList;
+
 int main() {
-    initscr();
-    cbreak();
-    noecho();
-    keypad(stdscr, TRUE);  // Enable arrow keys
+    Graph g;
+    EdgeListParser parser;
 
-    int n = 5;  // Number of doors
-    int highlight = 0;
-    int choice = -1;
+    // ЭТО ВСЕ ДЛЯ ЛИНУКСА РАБОТАЕТ!!!!!!!!!!!!!
 
-    while (true) {
-        clear();
-        mvprintw(
-            0, 0,
-            "Use arrows to select a door, Press ENTER to open, 'q' to quit:");
+    size_t uganda = 1;
 
-        for (int i = 0; i < n; ++i) {
-            if (i == highlight)
-                attron(A_REVERSE);  // Highlight the "active" button
-            mvprintw(i + 2, 2, "door %d: L", i + 1);
-            if (i == highlight) attroff(A_REVERSE);
-        }
-
-        if (choice != -1) {
-            mvprintw(n + 4, 2, "Status: Opened door %d", choice + 1);
-        }
-
-        int c = getch();
-        switch (c) {
-            case KEY_UP:
-                highlight = (highlight == 0) ? n - 1 : highlight - 1;
-                break;
-            case KEY_DOWN:
-                highlight = (highlight == n - 1) ? 0 : highlight + 1;
-                break;
-            case 10:  // Enter key
-                choice = highlight;
-                break;
-            case 'q':
-                endwin();
-                return 0;
-        }
+    if (uganda == 1) {
+        // Запуск откуда угодно
+        std::cout << "Running from wherever\n";
+        parser.parse("/home/ino/dev/graphodro4/samples/EDGE_LIST.b.txt", g);
+    } else if (uganda == 2) {
+        // Запуск из корня проекта
+        std::cout << "Running from root\n";
+        parser.parse("samples/EDGE_LIST.b.txt", g);
+    } else if (uganda == 3) {
+        // Запуск из build
+        std::cout << "Running from build\n";
+        parser.parse("../samples/EDGE_LIST.b.txt", g);
+    } else {
+        std::cout << "Go play ca sin(n) o\n Enough coding for today\n";
+        return 0;
     }
 
-    endwin();
+    // std::cout << g << "\n";
+
+    g.addEdge(3, 4);
+
+    g.addVertices(5);
+
+    // std::cout << g << "\n";
+
+    GraphFactory::tree(g, 10);
+
+    std::cout << g << "\n";
     return 0;
 }
