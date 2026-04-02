@@ -42,6 +42,9 @@ class IGraph {
     /** @brief Добавляет невзвешенное ребро */
     virtual size_t addEdge(size_t from, size_t to) = 0;
 
+    /** @brief Удаляет невзвешенное ребро */
+    virtual size_t rmEdges(size_t from, size_t to, size_t occurrences = 1) = 0;
+
     size_t addMultipleEdges(size_t from, size_t to, size_t count) {
         for (size_t i = 0; i < count; i++) {
             addEdge(from, to);
@@ -74,9 +77,6 @@ class IUnweightedGraph : virtual public IGraph {
      * Интерфейс для реализации невзвешенного графа
      */
    public:
-    /** @brief Удаляет невзвешенное ребро */
-    virtual size_t rmEdges(size_t from, size_t to, size_t occurrences = 1) = 0;
-
     /** @brief Получает степень вершины */
     virtual size_t deg(size_t vertex) const = 0;
 };
