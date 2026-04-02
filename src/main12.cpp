@@ -1,8 +1,5 @@
 #include <ncurses.h>
 
-#include <string>
-#include <vector>
-
 /**
  * @brief Demonstration of a TUI menu using ncurses.
  * Logic: We highlight a "door" and trigger an action upon Enter.

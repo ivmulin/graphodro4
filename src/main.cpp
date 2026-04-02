@@ -1,45 +1,44 @@
 #include <graphodro4/core/graphs.hpp>
 #include <graphodro4/parsers/parsers.hpp>
-
-#include "graphodro4/generators/generator.hpp"
+#include <graphodro4/serializer/graphviz_serializer.hpp>
+#include <iostream>
 
 using Graph = AdjacencyList;
+using Parser = EdgeListParser;
+using Serializer = GraphVizSerializer;
+
+#define ROOT "/home/ino/dev/graphodro4"
 
 int main() {
+    std::cout << "Hello!\n";
+
     Graph g;
-    EdgeListParser parser;
+    ParserUtility parser(CurrentParser::SNAP);
 
-    // ЭТО ВСЕ ДЛЯ ЛИНУКСА РАБОТАЕТ!!!!!!!!!!!!!
+    parser.parse(ROOT "/samples/EDGE_LIST.b.txt", g);
+    std::cout << g.getV() << " vertices, " << g.getEdgesCount() << " edges!\n";
 
-    size_t uganda = 1;
+    // std::cout << g << "\n";
 
-    if (uganda == 1) {
-        // Запуск откуда угодно
-        std::cout << "Running from wherever\n";
-        parser.parse("/home/ino/dev/graphodro4/samples/EDGE_LIST.b.txt", g);
-    } else if (uganda == 2) {
-        // Запуск из корня проекта
-        std::cout << "Running from root\n";
-        parser.parse("samples/EDGE_LIST.b.txt", g);
-    } else if (uganda == 3) {
-        // Запуск из build
-        std::cout << "Running from build\n";
-        parser.parse("../samples/EDGE_LIST.b.txt", g);
-    } else {
-        std::cout << "Go play ca sin(n) o\n Enough coding for today\n";
+    std::cout << g.getV() << ", " << g.getEdgesCount() << "\n";
+
+    std::cout << "Fin!\n";
+
+    try {
+        Graph g;
+        Parser{}.parse(ROOT "/samples/EDGE_LIST.b.txt", g);
+
+        std::cout << "Loaded: " << g.getV() << " vertices, "
+                  << g.getEdgesCount() << " edges\n";
+
+        Serializer(g).saveToFile("output.dot", "Graph");
+        std::cout << "Saved to output.dot\n";
+
         return 0;
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << "\n";
+        return 1;
     }
 
-    // std::cout << g << "\n";
-
-    g.addEdge(3, 4);
-
-    g.addVertices(5);
-
-    // std::cout << g << "\n";
-
-    GraphFactory::tree(g, 10);
-
-    std::cout << g << "\n";
     return 0;
 }
