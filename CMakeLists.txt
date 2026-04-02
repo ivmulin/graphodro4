@@ -1,56 +1,55 @@
 cmake_minimum_required(VERSION 3.15)
 project(GraphoDro4 VERSION 1.0)
 
-# --- астройки компиляции ---
+# --- Глобальные настройки ---
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# --- Поиск исходных файлов для библиотеки ---
-# Собираем всё из src, кроме main.cpp
-file(GLOB_RECURSE LIB_SOURCES
-    "src/algorithms/*.cpp"
-    "src/core/*.cpp"
-    "src/generators/*.cpp"
-    "src/parsers/*.cpp"
-    "src/serializer/*.cpp"
-)
-# На всякий случай явно исключаем main из списка объектов библиотеки
-list(REMOVE_ITEM LIB_SOURCES "${CMAKE_SOURCE_DIR}/src/main.cpp")
+# КРИТИЧНО: Решает проблему DT_TEXTREL в PIE на Arch Linux
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-file(GLOB_RECURSE HEADERS "include/*.hpp")
-
-# --- 1. Создание статической библиотеки ---
-add_library(graph_lib STATIC ${LIB_SOURCES} ${HEADERS})
-
-# add_library(graphlib STATIC ${LIB_SOURCES} ${LIB_HEADERS})
-# target_include_directories(graphlib PUBLIC
-#     ${CMAKE_CURRENT_SOURCE_DIR}/include
-#     ${CMAKE_CURRENT_SOURCE_DIR}/external
-# )
-
-# PUBLIC гарантирует, что любой, кто линкуется с graph_lib,
-# автоматически добавит папку include в пути поиска (решает проблему fatal error)
-target_include_directories(graph_lib PUBLIC include)
-
-# --- 2. Создание основного исполняемого файла ---
-add_executable(graphodro4 src/main.cpp)
-target_link_libraries(graphodro4 PRIVATE graph_lib)
-
-# Настройка вывода бинарника в bin/
-set_target_properties(graphodro4 PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-)
-
-# --- 3. Флаги компилятора ---
-if(MSVC)
-    target_compile_options(graph_lib PRIVATE /W4)
+# --- Поиск ncurses (Кроссплатформенно) ---
+if(WIN32)
+    # Поиск PDCurses для Windows
+    find_path(CURSES_INCLUDE_DIR NAMES curses.h)
+    find_library(CURSES_LIBRARY NAMES pdcurses)
+    if(NOT CURSES_LIBRARY)
+        message(WARNING "PDCurses not found. UI might not compile on Windows.")
+    endif()
 else()
-    target_compile_options(graph_lib PRIVATE -Wall -Wextra -Wpedantic)
+    # Стандартный поиск ncurses для Linux/macOS
+    find_package(Curses REQUIRED)
 endif()
 
-# --- 4. Подключение тестов ---
+# --- Исходники библиотеки ---
+file(GLOB_RECURSE LIB_SOURCES 
+    "src/algorithms/*.cpp" 
+    "src/core/*.cpp" 
+    "src/generators/*.cpp" 
+    "src/parsers/*.cpp" 
+    "src/serializer/*.cpp"
+)
+# Исключаем main, чтобы он не дублировался при линковке тестов
+list(FILTER LIB_SOURCES EXCLUDE REGEX "src/main.cpp")
+
+# --- Создание библиотеки ---
+add_library(graph_lib STATIC ${LIB_SOURCES})
+target_include_directories(graph_lib PUBLIC include)
+
+# --- Основное приложение ---
+add_executable(graphodro4 src/main.cpp)
+
+# Линковка: библиотека графов + ncurses
+target_link_libraries(graphodro4 PRIVATE 
+    graph_lib 
+    ${CURSES_LIBRARIES}
+)
+
+# Если ncurses требует специфических путей к include
+if(CURSES_INCLUDE_DIR)
+    target_include_directories(graphodro4 PRIVATE ${CURSES_INCLUDE_DIR})
+endif()
+
+# --- Подключение тестов ---
 enable_testing()
 add_subdirectory(tests)
-
-message(STATUS "Project ${PROJECT_NAME} configured. Library includes: algorithms, core, generators, parsers, serializers.")
