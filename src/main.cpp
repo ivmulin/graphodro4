@@ -1,430 +1,423 @@
-#include <ncurses.h>
-
+// ВНИМАНИЕ! БОЛЬШАЯ ЗАПРОМПЧЕННАЯ ФИГНЯ, НОРМАЛЬНАЯ БИБЛИОТЕКА НЕ ХОТЕЛА СТАВИТСЯ НА ВИНДУ (СЛАВА ЛИНУКСУ)
+// ПОЭТОМУ ОНО ВЫГЛЯДИТ ТАК ПЛОХО, ПРИЯТНОГО ПРОСМОТРА!
+#include <iostream>
+#include <string>
+#include <memory>
+#include <sstream>
+#include <iomanip>
+#include <limits>
 #include <graphodro4/core/adjacency_list.hpp>
 #include <graphodro4/core/adjacency_matrix.hpp>
-#include <graphodro4/core/graphs.hpp>
 #include <graphodro4/generators/generator.hpp>
 #include <graphodro4/parsers/parsers.hpp>
-#include <memory>
-#include <string>
-#include <vector>
+#include <graphodro4/serializer/graphviz_serializer.hpp>
+#include <graphodro4/serializer/program4you_serializer.hpp>
+#include <graphodro4/algorithms/metrics.hpp>
+#include <graphodro4/algorithms/dfs.hpp>
 
-#include "graphodro4/serializer/graphviz_serializer.hpp"
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
-// Указатель на текущий активный граф
-std::unique_ptr<IGraph> current_graph = nullptr;
 
-enum HIGHLIGHT { NEW_GRAPH, GENERATE_GRAPH, EDIT, LOAD, DUMP };
 
-enum EDITOR { ADD_VERTEX, RM_VERTEX, ADD_EDGE, RM_EDGE, REALLOCATE, EXIT };
-
-/**
- * Вспомогательная функция для вывода сообщений в центре экрана.
- * Закрывается по нажатию любой клавиши.
- */
-void show_message(const std::string& msg) {
-    int h, w;
-    getmaxyx(stdscr, h, w);
-    int msg_w = msg.length() + 4;
-    WINDOW* win = newwin(3, msg_w, h / 2 - 1, (w - msg_w) / 2);
-    box(win, 0, 0);
-    mvwprintw(win, 1, 2, "%s", msg.c_str());
-    wrefresh(win);
-
-    wgetch(win);
-    delwin(win);
-    touchwin(stdscr);
-    refresh();
-}
-
-/**
- * Чтение строки от пользователя.
- */
-std::string get_input_string(WINDOW* win, int y, int x,
-                             const std::string& prompt) {
-    echo();
-    curs_set(1);
-    char input[256];
-    mvwprintw(win, y, x, "%s", prompt.c_str());
-    wgetstr(win, input);
-    noecho();
-    curs_set(0);
-    return std::string(input);
-}
-
-/**
- * Отрисовка текущего состояния графа в правом окне.
- */
-void draw_graph_view(WINDOW* right_win) {
-    werase(right_win);
-    box(right_win, 0, 0);
-    mvwprintw(right_win, 0, 2, " Graph View ");
-
-    if (current_graph) {
-        mvwprintw(right_win, 2, 2, "Vertices: %zu", current_graph->getV());
-        mvwprintw(right_win, 3, 2, "Edges:    %zu", current_graph->getE());
-
-        // Визуализация соседей для первых нескольких вершин
-        size_t min_to_show = std::min(current_graph->getV(), (size_t)15);
-        for (size_t i = 0; i < min_to_show; ++i) {
-            auto neighbors = current_graph->getNeighbors(i);
-            mvwprintw(right_win, 5 + i, 2, "%zu: ", i);
-            for (auto n : neighbors) wprintw(right_win, "%zu ", n);
-        }
-        if (current_graph->getV() != (size_t)15) {
-            size_t diff =
-                std::max(current_graph->getV(), (size_t)15) - min_to_show;
-            mvwprintw(right_win, 21, 2, "%zu more . . . ", diff);
-        }
-    } else {
-        mvwprintw(right_win, 2, 2, "No active graph.");
+class ConsoleUI {
+private:
+    std::unique_ptr<IUnweightedGraph> current_graph;
+    ParserUtility parser{CurrentParser::EDGE_LIST};
+    
+    void clearInputBuffer() {
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
-    wrefresh(right_win);
-}
-
-/**
- * Меню выбора типа графа (Backend).
- * Закрывается по Enter (выбор) или Esc (отмена).
- */
-bool select_graph_backend() {
-    int h, w;
-    getmaxyx(stdscr, h, w);
-    WINDOW* sub = newwin(8, 40, h / 2 - 4, w / 2 - 20);
-    keypad(sub, TRUE);
-    box(sub, 0, 0);
-
-    std::vector<std::string> options = {"Adjacency List", "Adjacency Matrix"};
-    int choice = 0;
-    bool selected = false;
-
-    while (true) {
-        mvwprintw(sub, 1, 2, "Select Storage Type (ESC to cancel):");
-        for (int i = 0; i < (int)options.size(); ++i) {
-            if (i == choice) wattron(sub, A_REVERSE);
-            mvwprintw(sub, 3 + i, 5, options[i].c_str());
-            wattroff(sub, A_REVERSE);
-        }
-        wrefresh(sub);
-
-        int ch = wgetch(sub);
-        if (ch == 27) break;  // ESC
-        if (ch == KEY_UP)
-            choice = (choice > 0) ? choice - 1 : options.size() - 1;
-        if (ch == KEY_DOWN)
-            choice = (choice < (int)options.size() - 1) ? choice + 1 : 0;
-        if (ch == 10) {  // Enter
-            if (choice == 0)
-                current_graph = std::make_unique<AdjacencyList>();
-            else
-                current_graph = std::make_unique<AdjacencyMatrix>();
-            selected = true;
-            break;
-        }
+    
+    std::string getUserInput(const std::string& prompt) {
+        std::cout << prompt;
+        std::string input;
+        std::getline(std::cin, input);
+        return input;
     }
-    delwin(sub);
-    touchwin(stdscr);
-    refresh();
-    return selected;
-}
-
-/**
- * Режим редактирования графа.
- */
-void draw_editor(WINDOW* left_win, WINDOW* right_win) {
-    const std::vector<std::string> edit_menu = {
-        "Add Vertex", "Add Edge", "Remove Edge", "Reallocate", "Back to Menu"};
-    int highlight = 0;
-
-    while (true) {
-        draw_graph_view(right_win);
-        werase(left_win);
-        box(left_win, 0, 0);
-        mvwprintw(left_win, 0, 2, " Editor Mode ");
-
-        for (int i = 0; i < (int)edit_menu.size(); ++i) {
-            if (i == highlight) wattron(left_win, A_REVERSE);
-            mvwprintw(left_win, 2 + i, 4, edit_menu[i].c_str());
-            wattroff(left_win, A_REVERSE);
-        }
-        wrefresh(left_win);
-
-        int c = wgetch(left_win);
-        if (c == 27) return;
-
-        switch (c) {
-            case KEY_UP:
-                highlight =
-                    (highlight > 0) ? highlight - 1 : edit_menu.size() - 1;
-                break;
-            case KEY_DOWN:
-                highlight =
-                    (highlight < (int)edit_menu.size() - 1) ? highlight + 1 : 0;
-                break;
-            case 10:                   // Enter
-                if (highlight == 0) {  // Add Vertex
-                    current_graph->addVertices(1);
-                } else if (highlight == 1) {  // Add Edge (теперь индекс 1)
-                    try {
-                        size_t u = std::stoul(
-                            get_input_string(left_win, 10, 2, "From: "));
-                        size_t v = std::stoul(
-                            get_input_string(left_win, 11, 2, "To: "));
-                        current_graph->addEdge(u, v);
-                    } catch (...) {
-                        show_message("Error adding edge!");
-                    }
-                } else if (highlight == 2) {  // Remove Edge (теперь индекс 2)
-                    try {
-                        size_t u = std::stoul(
-                            get_input_string(left_win, 10, 2, "From: "));
-                        size_t v = std::stoul(
-                            get_input_string(left_win, 11, 2, "To: "));
-                        current_graph->rmEdges(u, v);
-                    } catch (...) {
-                        show_message("Error removing edge!");
-                    }
-                } else if (highlight == 3) {  // Reallocate (теперь индекс 3)
-                    try {
-                        std::string n_str = get_input_string(
-                            left_win, 10, 2, "New capacity (n): ");
-                        size_t n = std::stoul(n_str);
-                        current_graph->allocate(n);
-                        show_message("Reallocated to " + std::to_string(n) +
-                                     " vertices.");
-                    } catch (...) {
-                        show_message("Invalid number!");
-                    }
-                } else if (highlight == 4)
-                    return;  // Back to Menu
-                break;
-        }
-    }
-}
-
-void draw_generate_menu(WINDOW* left_win, WINDOW* right_win) {
-    if (!select_graph_backend()) return;
-
-    int h, w;
-    getmaxyx(stdscr, h, w);
-    // Увеличиваем высоту окна для размещения всех опций
-    WINDOW* gen_win = newwin(20, 50, h / 2 - 10, w / 2 - 25);
-    keypad(gen_win, TRUE);
-    box(gen_win, 0, 0);
-
-    // Полный список согласно generator.hpp
-    std::vector<std::string> gen_types = {"Complete Graph",
-                                          "Complete Bipartite",
-                                          "Tree (Prufer)",
-                                          "Star",
-                                          "Cycle",
-                                          "Path",
-                                          "Wheel",
-                                          "Random (Erdos-Renyi)",
-                                          "Cubic",
-                                          "Fixed Components",
-                                          "Forest",
-                                          "Fixed Bridges",
-                                          "Fixed Articulation Points",
-                                          "Fixed 2-Bridges",
-                                          "Halin Graph"};
-    int highlight = 0;
-
-    while (true) {
-        werase(gen_win);
-        box(gen_win, 0, 0);
-        mvwprintw(gen_win, 1, 2, "Select Generator (ESC to cancel):");
-
-        for (int i = 0; i < (int)gen_types.size(); ++i) {
-            if (i == highlight) wattron(gen_win, A_REVERSE);
-            mvwprintw(gen_win, 3 + i, 4, gen_types[i].c_str());
-            wattroff(gen_win, A_REVERSE);
-        }
-        wrefresh(gen_win);
-
-        int ch = wgetch(gen_win);
-        if (ch == 27) break;
-        if (ch == KEY_UP)
-            highlight = (highlight > 0) ? highlight - 1 : gen_types.size() - 1;
-        if (ch == KEY_DOWN)
-            highlight =
-                (highlight < (int)gen_types.size() - 1) ? highlight + 1 : 0;
-
-        if (ch == 10) {
+    
+    size_t getNumber(const std::string& prompt, size_t min = 0, size_t max = SIZE_MAX) {
+        while (true) {
+            std::cout << prompt;
+            std::string input;
+            std::getline(std::cin, input);
             try {
-                size_t n = std::stoul(get_input_string(gen_win, 18, 2, "n: "));
-
-                // Обработка каждого типа генератора
-                if (highlight == 0)
-                    GraphFactory::complete(*current_graph, n);
-                else if (highlight == 1) {
-                    size_t m =
-                        std::stoul(get_input_string(gen_win, 18, 15, "m: "));
-                    GraphFactory::completeBipartite(*current_graph, n, m);
-                } else if (highlight == 2)
-                    GraphFactory::tree(*current_graph, n);
-                else if (highlight == 3)
-                    GraphFactory::star(*current_graph, n);
-                else if (highlight == 4)
-                    GraphFactory::cycle(*current_graph, n);
-                else if (highlight == 5)
-                    GraphFactory::path(*current_graph, n);
-                else if (highlight == 6)
-                    GraphFactory::wheel(*current_graph, n);
-                else if (highlight == 7) {
-                    double p =
-                        std::stod(get_input_string(gen_win, 18, 15, "p: "));
-                    GraphFactory::random(*current_graph, n, p);
-                } else if (highlight == 8)
-                    GraphFactory::cubic(*current_graph, n);
-                else if (highlight == 9) {
-                    size_t k =
-                        std::stoul(get_input_string(gen_win, 18, 15, "k: "));
-                    GraphFactory::fixedComponents(*current_graph, n, k);
-                } else if (highlight == 10) {
-                    size_t k =
-                        std::stoul(get_input_string(gen_win, 18, 15, "k: "));
-                    GraphFactory::forest(*current_graph, n, k);
-                } else if (highlight == 11) {
-                    size_t k =
-                        std::stoul(get_input_string(gen_win, 18, 15, "k: "));
-                    GraphFactory::fixedBridges(*current_graph, n, k);
-                } else if (highlight == 12) {
-                    size_t k =
-                        std::stoul(get_input_string(gen_win, 18, 15, "k: "));
-                    GraphFactory::fixedArticulationPoints(*current_graph, n, k);
-                } else if (highlight == 13) {
-                    size_t k =
-                        std::stoul(get_input_string(gen_win, 18, 15, "k: "));
-                    GraphFactory::fixedTwoBridges(*current_graph, n, k);
-                } else if (highlight == 14)
-                    GraphFactory::halin(*current_graph, n);
-
-                show_message("Graph generated!");
-                delwin(gen_win);
-                draw_editor(left_win, right_win);
-                return;
-            } catch (const std::exception& e) {
-                show_message(e.what());
+                size_t value = std::stoul(input);
+                if (value >= min && value <= max) {
+                    return value;
+                }
+                std::cout << "Value must be between " << min << " and " << max << "\n";
+            } catch (...) {
+                std::cout << "Invalid number! Try again.\n";
             }
         }
     }
-    delwin(gen_win);
-    touchwin(stdscr);
-    refresh();
-}
+    
+    double getDouble(const std::string& prompt, double min = 0.0, double max = 1.0) {
+        while (true) {
+            std::cout << prompt;
+            std::string input;
+            std::getline(std::cin, input);
+            try {
+                double value = std::stod(input);
+                if (value >= min && value <= max) {
+                    return value;
+                }
+                std::cout << "Value must be between " << min << " and " << max << "\n";
+            } catch (...) {
+                std::cout << "Invalid number! Try again.\n";
+            }
+        }
+    }
+    
+    bool selectBackend() {
+        std::cout << "\n=== Select Graph Backend ===\n";
+        std::cout << "1. Adjacency List\n";
+        std::cout << "2. Adjacency Matrix\n";
+        std::cout << "Choice: ";
+        
+        std::string choice;
+        std::getline(std::cin, choice);
+        
+        if (choice == "1") {
+            current_graph = std::make_unique<AdjacencyList>();
+            std::cout << "Selected: Adjacency List\n";
+            return true;
+        } else if (choice == "2") {
+            current_graph = std::make_unique<AdjacencyMatrix>();
+            std::cout << "Selected: Adjacency Matrix\n";
+            return true;
+        }
+        
+        std::cout << "Invalid choice!\n";
+        return false;
+    }
+    
+    void showGraphInfo() {
+        if (!current_graph) {
+            std::cout << "No active graph!\n";
+            return;
+        }
+        
+        std::cout << "\n=== Graph Information ===\n";
+        std::cout << "Vertices: " << current_graph->getV() << "\n";
+        std::cout << "Edges: " << current_graph->getE() << "\n";
+        
+        // Show first few vertices
+        size_t show_count = std::min(current_graph->getV(), size_t(10));
+        std::cout << "\nNeighbors (first " << show_count << " vertices):\n";
+        for (size_t i = 0; i < show_count; ++i) {
+            auto neighbors = current_graph->getNeighbors(i);
+            std::cout << "  " << i << ": {";
+            for (size_t j = 0; j < neighbors.size(); ++j) {
+                std::cout << neighbors[j];
+                if (j < neighbors.size() - 1) std::cout << ", ";
+            }
+            std::cout << "}\n";
+        }
+        
+        if (current_graph->getV() > 10) {
+            std::cout << "  ... and " << (current_graph->getV() - 10) << " more vertices\n";
+        }
+    }
+    
+    void generateGraph() {
+        if (!selectBackend()) return;
+        
+        std::cout << "\n=== Graph Generators ===\n";
+        std::cout << "1. Complete Graph (Kn)\n";
+        std::cout << "2. Complete Bipartite (Knm)\n";
+        std::cout << "3. Tree (Prufer)\n";
+        std::cout << "4. Star (Sn)\n";
+        std::cout << "5. Cycle (Cn)\n";
+        std::cout << "6. Path (Pn)\n";
+        std::cout << "7. Wheel (Wn)\n";
+        std::cout << "8. Random Graph G(n,p)\n";
+        std::cout << "9. Cubic Graph\n";
+        std::cout << "10. Fixed Components\n";
+        std::cout << "11. Forest\n";
+        std::cout << "12. Fixed Bridges\n";
+        std::cout << "13. Fixed Articulation Points\n";
+        std::cout << "14. Fixed 2-Bridges\n";
+        std::cout << "15. Halin Graph\n";
+        std::cout << "Choice: ";
+        
+        std::string choice;
+        std::getline(std::cin, choice);
+        
+        try {
+            size_t n = getNumber("Enter n (number of vertices): ", 1);
+            
+            if (choice == "1") {
+                GraphFactory::complete(*current_graph, n);
+            } else if (choice == "2") {
+                size_t m = getNumber("Enter m: ", 1);
+                GraphFactory::completeBipartite(*current_graph, n, m);
+            } else if (choice == "3") {
+                GraphFactory::tree(*current_graph, n);
+            } else if (choice == "4") {
+                GraphFactory::star(*current_graph, n);
+            } else if (choice == "5") {
+                GraphFactory::cycle(*current_graph, n);
+            } else if (choice == "6") {
+                GraphFactory::path(*current_graph, n);
+            } else if (choice == "7") {
+                GraphFactory::wheel(*current_graph, n);
+            } else if (choice == "8") {
+                double p = getDouble("Enter p (probability 0-1): ", 0.0, 1.0);
+                GraphFactory::random(*current_graph, n, p);
+            } else if (choice == "9") {
+                if (n % 2 != 0) {
+                    std::cout << "Cubic graph requires even n!\n";
+                    return;
+                }
+                GraphFactory::cubic(*current_graph, n);
+            } else if (choice == "10") {
+                size_t k = getNumber("Enter k (components): ", 1, n);
+                GraphFactory::fixedComponents(*current_graph, n, k);
+            } else if (choice == "11") {
+                size_t k = getNumber("Enter k (trees in forest): ", 1, n);
+                GraphFactory::forest(*current_graph, n, k);
+            } else if (choice == "12") {
+                size_t k = getNumber("Enter k (bridges): ", 0, n-1);
+                GraphFactory::fixedBridges(*current_graph, n, k);
+            } else if (choice == "13") {
+                size_t k = getNumber("Enter k (articulation points): ", 0, n-2);
+                GraphFactory::fixedArticulationPoints(*current_graph, n, k);
+            } else if (choice == "14") {
+                size_t k = getNumber("Enter k (2-bridges): ", 0);
+                GraphFactory::fixedTwoBridges(*current_graph, n, k);
+            } else if (choice == "15") {
+                if (n < 4) {
+                    std::cout << "Halin graph requires n >= 4!\n";
+                    return;
+                }
+                GraphFactory::halin(*current_graph, n);
+            } else {
+                std::cout << "Invalid choice!\n";
+                return;
+            }
+            
+            std::cout << "Graph generated successfully!\n";
+            showGraphInfo();
+        } catch (const std::exception& e) {
+            std::cout << "Error: " << e.what() << "\n";
+        }
+    }
+    
+    void editGraph() {
+        if (!current_graph) {
+            std::cout << "No active graph! Create one first.\n";
+            return;
+        }
+        
+        while (true) {
+            std::cout << "\n=== Edit Graph ===\n";
+            std::cout << "1. Add Vertex\n";
+            std::cout << "2. Add Edge\n";
+            std::cout << "3. Remove Edge\n";
+            std::cout << "4. Reallocate\n";
+            std::cout << "5. Back to Main Menu\n";
+            std::cout << "Choice: ";
+            
+            std::string choice;
+            std::getline(std::cin, choice);
+            
+            if (choice == "5") break;
+            
+            try {
+                if (choice == "1") {
+                    current_graph->addVertices(1);
+                    std::cout << "Vertex added. Total: " << current_graph->getV() << "\n";
+                } else if (choice == "2") {
+                    size_t u = getNumber("From vertex: ");
+                    size_t v = getNumber("To vertex: ");
+                    current_graph->addEdge(u, v);
+                    std::cout << "Edge added (" << u << ", " << v << ")\n";
+                } else if (choice == "3") {
+                    size_t u = getNumber("From vertex: ");
+                    size_t v = getNumber("To vertex: ");
+                    size_t removed = current_graph->rmEdges(u, v);
+                    std::cout << "Removed " << removed << " edge(s)\n";
+                } else if (choice == "4") {
+                    size_t n = getNumber("New size: ", 1);
+                    current_graph->allocate(n);
+                    std::cout << "Reallocated to " << n << " vertices\n";
+                } else {
+                    std::cout << "Invalid choice!\n";
+                }
+            } catch (const std::exception& e) {
+                std::cout << "Error: " << e.what() << "\n";
+            }
+        }
+    }
+    
+    void computeMetrics() {
+        if (!current_graph) {
+            std::cout << "No active graph!\n";
+            return;
+        }
+        
+        GraphMetrics metrics(*current_graph);
+        
+        std::cout << "\n=== Graph Metrics ===\n";
+        std::cout << std::fixed << std::setprecision(4);
+        std::cout << "Density: " << metrics.getDensity() << "\n";
+        std::cout << "Diameter: " << metrics.getDiameter() << "\n";
+        std::cout << "Transitivity: " << metrics.getTransitivity() << "\n";
+        std::cout << "Components Count: " << metrics.getComponentsCount() << "\n";
+        std::cout << "Articulation Points: " << metrics.getArticulationPointsCount() << "\n";
+        std::cout << "Bridges (Tarjan): " << metrics.getBridgesCount() << "\n";
+        std::cout << "Bridges (Randomized): " << metrics.getBridgesCountRandomized() << "\n";
+        std::cout << "Is Bipartite: " << (metrics.isBipartite() ? "Yes" : "No") << "\n";
+        std::cout << "Chromatic Number (upper bound): " << metrics.estimateChromaticNumber() << "\n";
+    }
+    
+    void loadGraph() {
+        if (!selectBackend()) return;
+        
+        std::cout << "\n=== Select Parser ===\n";
+        std::cout << "1. Edge List\n";
+        std::cout << "2. Adjacency Matrix\n";
+        std::cout << "3. DIMACS\n";
+        std::cout << "4. SNAP\n";
+        std::cout << "Choice: ";
+        
+        std::string choice;
+        std::getline(std::cin, choice);
+        
+        CurrentParser parser_type = CurrentParser::EDGE_LIST;
+        if (choice == "2") parser_type = CurrentParser::ADJACENCY_MATRIX;
+        else if (choice == "3") parser_type = CurrentParser::DIMACS;
+        else if (choice == "4") parser_type = CurrentParser::SNAP;
+        
+        parser.reassignParser(parser_type);
+        
+        std::string filename = getUserInput("Enter filename: ");
+        
+        try {
+            parser.parse(filename, *current_graph);
+            std::cout << "Graph loaded successfully!\n";
+            showGraphInfo();
+        } catch (const std::exception& e) {
+            std::cout << "Error loading graph: " << e.what() << "\n";
+        }
+    }
+    
+    void saveGraph() {
+        if (!current_graph) {
+            std::cout << "No active graph!\n";
+            return;
+        }
+        
+        std::cout << "\n=== Select Serialization Format ===\n";
+        std::cout << "1. GraphViz (.dot)\n";
+        std::cout << "2. Program4You (.edges)\n";
+        std::cout << "Choice: ";
+        
+        std::string formatChoice;
+        std::getline(std::cin, formatChoice);
+        
+        std::string filename = getUserInput("Enter output filename: ");
+        
+        try {
+            if (formatChoice == "2") {
+                // Program4You Serializer
+                Program4YouSerializer serializer(*current_graph);
+                serializer.saveToFile(filename);
+                std::cout << "Saved to " << filename << " (Program4You format)\n";
+            } else {
+                // GraphViz Serializer
+                std::cout << "\nGraphViz Options:\n";
+                std::cout << "1. Simple graph\n";
+                std::cout << "2. With custom title\n";
+                std::cout << "Choice: ";
+                
+                std::string styleChoice;
+                std::getline(std::cin, styleChoice);
+                
+                std::string title = "Graph";
+                if (styleChoice == "2") {
+                    title = getUserInput("Enter graph title: ");
+                }
+                
+                GraphVizSerializer serializer(*current_graph);
+                serializer.saveToFile(filename, title);
+                std::cout << "Saved to " << filename << " (GraphViz format)\n";
+            }
+        } catch (const std::exception& e) {
+            std::cout << "Error saving graph: " << e.what() << "\n";
+        }
+    }
+    
+    void showMainMenu() {
+        std::cout << "\n╔══════════════════════════════════════╗\n";
+        std::cout << "║       GraphoDro4 - Main Menu         ║\n";
+        std::cout << "╠══════════════════════════════════════╣\n";
+        std::cout << "║ 1. Create Empty Graph                ║\n";
+        std::cout << "║ 2. Generate Graph                    ║\n";
+        std::cout << "║ 3. Edit Graph                        ║\n";
+        std::cout << "║ 4. Show Graph Info                   ║\n";
+        std::cout << "║ 5. Compute Metrics                   ║\n";
+        std::cout << "║ 6. Load Graph from File              ║\n";
+        std::cout << "║ 7. Save Graph                        ║\n";
+        std::cout << "║ 8. Exit                              ║\n";
+        std::cout << "╚══════════════════════════════════════╝\n";
+        std::cout << "Choice: ";
+    }
+
+public:
+    void run() {
+        std::cout << "╔═══════════════════════════════════════════╗\n";
+        std::cout << "║     Welcome to GraphoDro4 v1.0            ║\n";
+        std::cout << "║     Graph Analysis Library                ║\n";
+        std::cout << "╚═══════════════════════════════════════════╝\n";
+        
+        while (true) {
+            showMainMenu();
+            
+            std::string choice;
+            std::getline(std::cin, choice);
+            
+            if (choice == "8") {
+                std::cout << "Goodbye!\n";
+                break;
+            } else if (choice == "1") {
+                if (selectBackend()) {
+                    editGraph();
+                }
+            } else if (choice == "2") {
+                generateGraph();
+            } else if (choice == "3") {
+                editGraph();
+            } else if (choice == "4") {
+                showGraphInfo();
+            } else if (choice == "5") {
+                computeMetrics();
+            } else if (choice == "6") {
+                loadGraph();
+            } else if (choice == "7") {
+                saveGraph();
+            } else {
+                std::cout << "Invalid choice! Try again.\n";
+            }
+        }
+    }
+};
 
 int main() {
-    initscr();
-    cbreak();
-    noecho();
-    curs_set(0);
-    keypad(stdscr, TRUE);
-    ParserUtility parser(CurrentParser::EDGE_LIST);
-
-    int h, w;
-    getmaxyx(stdscr, h, w);
-
-    WINDOW* left_win = nullptr;
-    WINDOW* right_win = nullptr;
-
-    // 1. Проверка на критически малый размер
-    if (h < 10 || w < 30) {
-        endwin();
-        printf("Oops! It's too narrow here. Please resize your terminal.\n");
-        return 1;  // Завершаем работу, так как интерфейс не влезет
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8); // Включаем UTF-8 для вывода
+    SetConsoleCP(CP_UTF8);       // Включаем UTF-8 для ввода
+#endif
+    try {
+        ConsoleUI ui;
+        ui.run();
+        return 0;
+    } catch (const std::exception& e) {
+        std::cerr << "Fatal error: " << e.what() << "\n";
+        return 1;
     }
-
-    // 2. Логика разделения
-    if (w >= 80) {
-        // Горизонтальное разделение (Side-by-side)
-        int left_w = (w * 2) / 5;
-        left_win = newwin(h, left_w, 0, 0);
-        right_win = newwin(h, w - left_w, 0, left_w);
-    } else {
-        // Вертикальное разделение (Stacked)
-        // Оставляем под меню фиксированную высоту или пропорцию
-        int menu_h = 20;
-        left_win = newwin(menu_h, w, 0, 0);
-        right_win = newwin(h - menu_h, w, menu_h, 0);
-    }
-
-    // 3. Безопасная настройка
-    if (left_win) keypad(left_win, TRUE);
-    if (right_win) keypad(right_win, TRUE);
-
-    std::vector<std::string> main_menu = {"Create empty graph",
-                                          "Generate graph", "Edit graph",
-                                          "Load from file", "Dump to GraphViz"};
-    int highlight = 0;
-
-    while (true) {
-        draw_graph_view(right_win);
-        werase(left_win);
-        box(left_win, 0, 0);
-        mvwprintw(left_win, 0, 2, " Main Menu ");
-
-        for (int i = 0; i < (int)main_menu.size(); ++i) {
-            if (i == highlight) wattron(left_win, A_REVERSE);
-            mvwprintw(left_win, 2 + i, 4, main_menu[i].c_str());
-            wattroff(left_win, A_REVERSE);
-        }
-        wrefresh(left_win);
-
-        int c = wgetch(left_win);
-        switch (c) {
-            case KEY_UP:
-                highlight =
-                    (highlight > 0) ? highlight - 1 : main_menu.size() - 1;
-                break;
-            case KEY_DOWN:
-                highlight =
-                    (highlight < (int)main_menu.size() - 1) ? highlight + 1 : 0;
-                break;
-            case 'q':
-                endwin();
-                return 0;
-            case 10:
-                if (highlight == HIGHLIGHT::NEW_GRAPH) {
-                    if (select_graph_backend())
-                        draw_editor(left_win, right_win);
-                } else if (highlight == HIGHLIGHT::GENERATE_GRAPH) {
-                    draw_generate_menu(left_win, right_win);  // Новая логика
-                } else if (highlight == HIGHLIGHT::LOAD) {
-                    if (select_graph_backend()) {
-                        std::string path =
-                            get_input_string(left_win, 12, 2, "Path: ");
-                        try {
-                            parser.parse(path, *current_graph);
-                            show_message("Loaded!");
-                            draw_editor(left_win, right_win);
-                        } catch (...) {
-                            show_message("Failed!");
-                        }
-                    }
-                } else if (highlight == HIGHLIGHT::EDIT) {
-                    if (current_graph) {
-                        draw_editor(left_win, right_win);
-                    } else {
-                        show_message("No graph loaded :(");
-                    }
-                } else if (highlight == HIGHLIGHT::DUMP) {
-                    if (current_graph) {
-                        std::string path =
-                            get_input_string(left_win, 12, 2, "Save as: ");
-                        try {
-                            GraphVizSerializer serializer(*current_graph);
-                            serializer.saveToFile(path);
-                            show_message("Saved to " + path);
-                        } catch (...) {
-                            show_message("Save failed!");
-                        }
-                    } else {
-                        show_message("Nothing to save :P");
-                    }
-                }
-                break;
-        }
-    }
-    endwin();
-    return 0;
 }

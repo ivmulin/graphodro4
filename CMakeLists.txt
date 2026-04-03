@@ -24,7 +24,7 @@ endif()
 # --- Исходники библиотеки ---
 file(GLOB_RECURSE LIB_SOURCES 
     "src/algorithms/*.cpp" 
-    "src/core/*.cpp" 
+    "src/core/*.cpp" o
     "src/generators/*.cpp" 
     "src/parsers/*.cpp" 
     "src/serializer/*.cpp"
