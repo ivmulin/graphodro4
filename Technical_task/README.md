@@ -37,7 +37,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake -S . -B build DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 # В режиме отладки (Debug)
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 ```
 ### 2. Сборка (после изменений кода)
 

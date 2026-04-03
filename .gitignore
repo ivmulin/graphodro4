@@ -1,41 +1,70 @@
-# Prerequisites
-*.d
+# --- Build Artifacts ---
+# Игнорируем директорию сборки целиком (out-of-source build)
+build/
+bin/
+obj/
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# --- CMake Intermediate Files ---
+# Эти файлы CMake генерирует под конкретную систему
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+Makefile
+*.cmake
 
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
+# --- Executables ---
+# Основной бинарник и тесты (для Linux и Windows)
+graphodro4
+graphodro4.exe
+unit_tests
 *.out
 *.app
+*.exe
 
-# debug information files
+# --- Executables outputs ---
+# Выходные файлы
+*.dot
+
+# --- IDE & Editor Specific ---
+# Visual Studio (Windows)
+.vs/
+*.user
+*.sln
+*.vcxproj
+*.filters
+
+# Neovim / Vim (Linux)
+*.swp
+*.swo
+Session.vim
+.netrwhist
+undo/
+
+# --- LSP & Static Analysis ---
+compile_commands.json
+.clangd/
+
+# VS Code
+.vscode/
+
+# --- Obsidian Specific ---
+# Скрытая папка с настройками интерфейса и плагинов
+.obsidian/
+.trash/
+.DS_Store
+Technical_task/.obsidian/
+Technical_task/.trash/
+Technical_task/.DS_Store
+
+# --- Operating System Specific ---
+.DS_Store
+*.directory
+Thumbs.db
+
+# --- Debug & Logs ---
+*.log
+*.pdb
+*.ilk
 *.dwo
